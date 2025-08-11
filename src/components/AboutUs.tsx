@@ -86,7 +86,7 @@ and rewarded for their achievements, promoting a spirit of healthy competition a
       </section>
 
       {/* Milestones */}
-      <section>
+      {/* <section>
         <h2 className="text-2xl font-semibold text-green-700 mb-6 border-l-4 border-green-500 pl-4">Milestones</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="flex items-start bg-white p-4 rounded-lg shadow">
@@ -118,7 +118,7 @@ and rewarded for their achievements, promoting a spirit of healthy competition a
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

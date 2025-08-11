@@ -8,8 +8,11 @@ const Footer: React.FC = () => (
       {/* Contact Info */}
       <div className="text-center md:text-left">
         <div className="font-bold text-lg">Green Field School</div>
-        <div>No 1, ABC Street</div>
-        <div>044-10203404 | 6363848498</div>
+        <div>11/34B, Udayampalayam Rd, <br />Pallakattu Thottam, Gounder Mills,
+       <br />Coimbatore, Tamil Nadu 641029.
+</div>
+        <div>+91 96003 66634 | 
+9894376100</div>
         <div>greenField@gmail.com</div>
       </div>
 

@@ -55,7 +55,7 @@ const EnterMarks: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const subjects = ['Mathematics', 'Science', 'English', 'Physics', 'Chemistry', 'Biology', 'History', 'Geography'];
+  const subjects = ['Mathematics', 'Science', 'English', 'Physics', 'Chemistry', 'Biology', 'Social Science', 'Commerce', 'Computer Science', 'Accountancy', 'Computer Application','Economics','Business maths'];
 
   // Get unique classes from students list
   const classOptions = Array.from(new Set(students.map((s) => s.class))).sort();

@@ -215,45 +215,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
       </div>
     </section>
 
-      <section className="bg-gray-50 py-12 w-full">
-        <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-green-800 mb-6">News & Announcements</h2>
-            <FaBullhorn className="text-pink-500" size={28} />
-          <div className="space-y-6">
-            {/* News Item 1 */}
-            <div className="flex items-start space-x-4 bg-white p-6 rounded shadow">
-              <div className="flex flex-col items-center bg-emerald-600 text-white rounded p-2 w-16">
-                <span className="text-lg font-bold">JUN</span>
-                <span className="text-2xl font-extrabold">07</span>
-                <span className="text-sm">2024</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-red-600">CBSE SSC 480 & Above</h3>
-                <p className="text-sm text-gray-600">Academics</p>
-              </div>
-            </div>
-
-            {/* News Item 2 */}
-            <div className="flex items-start space-x-4 bg-white p-6 rounded shadow">
-              <div className="flex flex-col items-center bg-emerald-600 text-white rounded p-2 w-16">
-                <span className="text-lg font-bold">JUN</span>
-                <span className="text-2xl font-extrabold">07</span>
-                <span className="text-sm">2024</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-red-600">CBSE SSC RESULTS 2024</h3>
-                <p className="text-sm text-gray-600">Academics</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <button className="bg-pink-500 hover:bg-pink-600 text-white px-5 py-2 rounded-full font-semibold shadow transition duration-300">
-              VIEW ALL
-            </button>
-          </div>
-        </div>
-      </section>
+      
 
 
       {/* Google Maps Section */}
