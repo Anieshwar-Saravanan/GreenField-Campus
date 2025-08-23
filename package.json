@@ -1,8 +1,9 @@
 {
   "name": "greenfield-parent-portal",
-  "private": true,
   "version": "1.0.0",
   "type": "module",
+  "homepage": "http://green.local:99",
+  "private": false,
   "scripts": {
     "dev": "vite",
     "build": "vite build",

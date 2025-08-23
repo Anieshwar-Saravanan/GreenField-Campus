@@ -9,10 +9,8 @@ const LandingNav: React.FC = () => {
   const navLinks = [
     { label: 'About Us', to: '/about', icon: FaInfoCircle, color: 'text-lime-200' },
     { label: 'Academics', to: '/academics', icon: FaBookOpen, color: 'text-white' },
-    { label: 'Admission', to: '/admission', icon: FaUserGraduate, color: 'text-white' },
     { label: 'Gallery', to: '/gallery', icon: FaImages, color: 'text-white' },
     { label: 'Contact', to: '/contact', icon: FaEnvelope, color: 'text-white' },
-    { label: 'Student Life', to: '/student-life', icon: FaUserFriends, color: 'text-white' },
   ];
   return (
     <nav className="bg-gradient-to-r from-green-700 via-emerald-500 to-green-400 shadow-lg px-8 py-4 flex items-center justify-between sticky top-0 z-30">
