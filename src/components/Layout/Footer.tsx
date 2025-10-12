@@ -13,13 +13,13 @@ const Footer: React.FC = () => (
 </div>
         <div>+91 96003 66634 | 
 9894376100</div>
-        <div>greenField@gmail.com</div>
+        <div>campusgreenfield@gmail.com</div>
       </div>
 
       {/* Social Media Buttons */}
       <div className="flex gap-4">
         <a
-          href="https://www.instagram.com/"
+          href="https://www.instagram.com/greenfieldcampus?igsh=dzJ6ZjVrcXEzdXE0"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"
@@ -27,7 +27,7 @@ const Footer: React.FC = () => (
           <FaInstagram size={20} />
         </a>
         <a
-          href="https://www.facebook.com/"
+          href="https://www.facebook.com/share/1Lw4p5eRgs/?mibextid=wwXIfr"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"

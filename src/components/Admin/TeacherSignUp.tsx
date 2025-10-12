@@ -7,8 +7,6 @@ const TeacherSignUp: React.FC = () => {
     name: '',
     email: '',
     phone: '',
-    password: '',
-    confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -39,14 +37,7 @@ const TeacherSignUp: React.FC = () => {
       setError('Please enter a valid phone number');
       return false;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
+
     return true;
   };
 
@@ -56,8 +47,6 @@ const TeacherSignUp: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      // Hash password (in production, this should be done on the server)
-      const passwordHash = btoa(formData.password); // Simple base64 encoding for demo
       const { error: signUpError } = await supabase
         .from('users')
         .insert([
@@ -65,7 +54,6 @@ const TeacherSignUp: React.FC = () => {
             name: formData.name.trim(),
             email: formData.email.toLowerCase().trim(),
             phone: formData.phone.trim() || null,
-            password_hash: passwordHash,
             role: 'teacher',
             is_verified: false,
           },
@@ -102,7 +90,7 @@ const TeacherSignUp: React.FC = () => {
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Account Created Successfully!</h1>
             <p className="text-gray-600 mb-6">
-              The teacher account has been created and is pending verification.
+              The teacher account has been created.
             </p>
           </div>
         </div>
@@ -169,36 +157,7 @@ const TeacherSignUp: React.FC = () => {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="Confirm password"
-                  required
-                />
-              </div>
-            </div>
+            
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}

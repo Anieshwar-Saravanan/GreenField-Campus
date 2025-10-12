@@ -1,0 +1,3 @@
+# This file tells Maven to include the webapp directory in the WAR file.
+# It's a standard part of the Maven WAR plugin configuration.
+# No content is needed in this file for a standard setup.

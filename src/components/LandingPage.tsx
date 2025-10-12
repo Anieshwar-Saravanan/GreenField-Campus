@@ -3,19 +3,27 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FaTrophy, FaImages, FaUserGraduate, FaBullhorn, FaMapMarkerAlt } from 'react-icons/fa';
 
+// Import images directly so Vite can process them
+import achievementImage from '/achievement.webp';
+import galleryImage from '/gallery.jpg';
+import admissionImage from '/admission.webp';
+import schoolImage from '/school-image.jpg';
+import schoolEntrance from '/school entrance.jpeg';
+import schoolEntrance1 from '/school entrance1.jpeg';
+import school from '/school slide.jpeg'
 const testimonials = [
   {
-    name: 'Priya Sharma',
+    name: 'Mohammed Sadiq',
     role: 'Parent',
     review: 'GreenField School has transformed my child’s learning experience. The teachers are caring and the campus is vibrant!',
   },
   {
-    name: 'Rahul Verma',
+    name: 'Priya S',
     role: 'Student',
     review: 'I love the activities and the friendly environment. I feel encouraged to do my best every day!',
   },
   {
-    name: 'Mrs. Anitha',
+    name: 'Mukunthan S',
     role: 'Teacher',
     review: 'Teaching at GreenField is a joy. The staff and students make every day rewarding.',
   },
@@ -29,34 +37,46 @@ const highlightCards = [
   {
     title: 'Achievements',
     description: "Celebrating our students' and school's proud moments.",
-    image: '/achievement.webp',
-    link: '/achievements',
+    image: achievementImage,
+    link: './achievements',
     icon: FaTrophy,
     color: 'text-yellow-500',
   },
   {
     title: 'Gallery',
     description: 'Snapshots from events, activities, and daily school life.',
-    image: '/gallery.jpg',
-    link: '/gallery',
+    image: galleryImage,
+    link: './gallery',
     icon: FaImages,
     color: 'text-purple-500',
   },
   {
     title: 'Admission Open',
     description: 'Join our vibrant community. Apply for 2025-26 now!',
-    image: '/admission.webp',
-    link: '/admission',
+    image: admissionImage,
+    link: './admission',
     icon: FaUserGraduate,
     color: 'text-green-600',
   },
 ];
 const LandingPage: React.FC<LandingPageProps> = () => {
   const [current, setCurrent] = useState(0);
+  const [bgIndex, setBgIndex] = useState(0);
   // Touch state
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
   const autoSlideRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Background slideshow images (order: school + 3 others)
+  const bgImages = [school,schoolEntrance,schoolEntrance1];
+
+  // Background auto-rotate every 5s
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % bgImages.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
 
   // Auto-slide logic
   React.useEffect(() => {
@@ -103,10 +123,23 @@ const LandingPage: React.FC<LandingPageProps> = () => {
       {/* Header */}
 
       {/* Hero Section */}
-      <section className="relative flex-1 flex flex-col items-center justify-center text-center bg-cover bg-center min-h-[800px] md:min-h-[900px] w-full" style={{ backgroundImage: "url('/school-image.jpg')" }}>
-        <div className="absolute inset-0 bg-green-900 bg-opacity-40"></div>
-        <div className="relative z-10 py-32">
-          <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-lg mb-4">GreenField School</h1>
+      <section className="relative flex-1 flex flex-col items-center justify-center text-center min-h-[800px] md:min-h-[900px] w-full">
+        {/* Background image layers (crossfade) */}
+        {bgImages.map((img, idx) => (
+          <div
+            key={idx}
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${idx === bgIndex ? 'opacity-100' : 'opacity-0'}`}
+            style={{ backgroundImage: `url(${img})`, zIndex: 0 }}
+            aria-hidden
+          />
+        ))}
+
+        {/* Colored overlay above backgrounds */}
+        <div className="absolute inset-0 bg-green-900 bg-opacity-40" style={{ zIndex: 10 }}></div>
+
+        <div className="relative z-20 py-32">
+          <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-lg mb-4">GreenField Campus( V.C.S.M Matric. Higher Secondary School)
+</h1>
           {/* <p className="text-2xl md:text-3xl text-white font-light mb-8 drop-shadow">Glory &amp; Greatness</p> */}
           <motion.p
             className="text-2xl md:text-3xl text-white font-light mb-8 drop-shadow"
@@ -225,7 +258,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
           <div className="rounded-lg overflow-hidden shadow-lg border border-green-200">
             <iframe
               title="Green Field campus"
-              src="https://www.google.com/maps?q=Green+Fields+Matriculation+School&output=embed"
+              src="https://www.google.com/maps?q=Green+Field+Matriculation+School+Coimbatore&output=embed"
               width="100%"
               height="350"
               style={{ border: 0 }}

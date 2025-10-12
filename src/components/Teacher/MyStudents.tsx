@@ -38,7 +38,7 @@ const MyStudents: React.FC<MyStudentsProps> = ({ teacherId }) => {
       }
       const parentId = parent[0].id;
       // 1. Add student (without teacher_id)
-      const { data: studentData, error: studentError } = await supabase.from('students').insert([
+  const { data: studentData, error: studentError } = await supabase.from('students').insert([
         {
           name: newStudent.name,
           class: newStudent.class,

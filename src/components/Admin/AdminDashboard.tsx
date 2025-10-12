@@ -265,7 +265,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal open={showStudentModal} onClose={() => setShowStudentModal(false)} title="Manage Students">
+      {/* <Modal open={showStudentModal} onClose={() => setShowStudentModal(false)} title="Manage Students">
         <p className="mb-4">Add, edit, or remove students here. (Implement full CRUD as needed.)</p>
         <button className="bg-emerald-500 text-white px-4 py-2 rounded" onClick={() => alert('Add Student form goes here!')}>Add Student</button>
       </Modal>
@@ -275,7 +275,7 @@ const AdminDashboard: React.FC = () => {
       </Modal>
       <Modal open={showSettingsModal} onClose={() => setShowSettingsModal(false)} title="System Settings">
         <p>Configure system settings here. (Implement settings UI as needed.)</p>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };

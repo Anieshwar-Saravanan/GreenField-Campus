@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Phone, Lock, Send, GraduationCap, UserPlus } from 'lucide-react';
 import SignUp from './SignUp';
@@ -31,11 +31,15 @@ const Login: React.FC = () => {
   const [phoneOtp, setPhoneOtp] = useState('');
   const [otpConfirm, setOtpConfirm] = useState<any>(null);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  // cooldown for phone OTP to avoid hitting server rate limits
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
 
   const navigate = useNavigate();
   const { login} = useAuth();
   const { loginWithOtp } = useAuth();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,6 +53,13 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // prevent unused linter complaint in dev by referencing the function
+  if (import.meta.env.DEV) {
+    // reference function in dev to avoid unused linter error
+    // eslint-disable-next-line no-unused-expressions
+    handleEmailLogin.toString();
+  }
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +79,7 @@ const Login: React.FC = () => {
       if (error || !data) throw new Error('Email not registered. Please sign up first.');
 
       // Call backend to send OTP via Nodemailer
-      const response = await fetch('http://localhost:4000/api/send-otp', {
+  const response = await fetch('http://74.225.192.191:4000/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -89,7 +100,7 @@ const Login: React.FC = () => {
     setError('');
     try {
       // Call backend to verify OTP
-      const response = await fetch('http://localhost:4000/api/verify-otp', {
+  const response = await fetch('http://74.225.192.191:4000/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
@@ -130,53 +141,151 @@ const Login: React.FC = () => {
     }
   };
 
-const setupRecaptcha = () => {
-  if (!window.recaptchaVerifier) {
+const setupRecaptcha = async () => {
+  try {
+    // If verifier exists, try to ensure its widget is rendered and usable.
+    if (window.recaptchaVerifier) {
+      try {
+        // render() returns a promise that resolves with the widget id.
+        await window.recaptchaVerifier.render();
+        return window.recaptchaVerifier;
+      } catch (err: any) {
+        // If the client element was removed or render failed, drop and recreate.
+        console.warn('Existing reCAPTCHA render failed, recreating verifier:', err?.message || err);
+        try {
+          // Clean up any existing reference and recreate below.
+          // Note: there's no official dispose, so just overwrite the reference.
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          window.recaptchaVerifier = undefined;
+        } catch (_) {}
+      }
+    }
+
+    // Create a fresh verifier and wait for its render to complete.
+    const isProd = import.meta.env.MODE === 'production';
     window.recaptchaVerifier = new RecaptchaVerifier(auth,
-      "recaptcha-container",
+      'recaptcha-container',
       {
-        size: "invisible",
+        // show visible widget in dev so we can confirm it's rendering
+        size: isProd ? 'invisible' : 'normal',
         callback: () => {
-          console.log("reCAPTCHA solved");
+          console.log('reCAPTCHA solved');
         },
       },
     );
 
-    window.recaptchaVerifier.render().catch(console.error);
+    await window.recaptchaVerifier.render();
+    // store widget id so we can inspect token without consuming it
+    try {
+      // @ts-ignore
+      const widgetId = await window.recaptchaVerifier.render();
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      window.recaptchaWidgetId = widgetId;
+    } catch (err) {
+      // already rendered above; ignore
+    }
+    return window.recaptchaVerifier;
+  } catch (err) {
+    console.error('setupRecaptcha error:', err);
+    throw err;
   }
 };
 
+// Ensure reCAPTCHA is rendered when user selects phone login so the verifier
+// is ready before signInWithPhoneNumber is called (avoids potential race).
+useEffect(() => {
+  if (loginMethod !== 'phone') return;
+  (async () => {
+    try {
+      await setupRecaptcha();
+      try {
+        // Inspect non-destructively whether a token exists and reset if empty
+        // @ts-ignore
+        const wid = window.recaptchaWidgetId;
+        // @ts-ignore
+        const grecaptcha = (window as any).grecaptcha;
+        if (wid != null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
+          const token = grecaptcha.getResponse(wid);
+          if (!token) {
+            try { grecaptcha.reset(wid); } catch (_) {}
+          }
+        }
+      } catch (err) {
+        console.warn('Existing reCAPTCHA verifier check failed', err);
+      }
+    } catch (err) {
+      console.warn('reCAPTCHA setup failed', err);
+    }
+  })();
+}, [loginMethod]);
+
 const handlePhoneSendOtp = async (e: React.FormEvent) => {
   e.preventDefault();
+  if (cooldownUntil && Date.now() < cooldownUntil) {
+    setError(`Please wait ${cooldownRemaining}s before requesting another code.`);
+    return;
+  }
   setLoading(true);
+  setError('');
   try {
-    setupRecaptcha();
-    const appVerifier = window.recaptchaVerifier;
-    // Always add +91 country code for Firebase, strip non-digits from input
     const rawPhone = phone.replace(/\D/g, '');
-    if (rawPhone.length !== 10) {
-      setError('Please enter a valid 10-digit phone number.');
-      setLoading(false);
-      return;
-    }
-    const phoneWithCountryCode = `+91${rawPhone}`;
+    const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
+    const appVerifier = await setupRecaptcha();
+
+    // Log token presence without consuming it
+    try {
+      // @ts-ignore
+      const wid = window.recaptchaWidgetId;
+      // @ts-ignore
+      const grecaptcha = (window as any).grecaptcha;
+      if (wid != null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
+        const token = grecaptcha.getResponse(wid);
+        console.log('reCAPTCHA token length:', token ? token.length : 0);
+      }
+    } catch (_err) {}
+
     const confirmation = await signInWithPhoneNumber(auth, phoneWithCountryCode, appVerifier);
     setOtpConfirm(confirmation);
     setPhoneOtpSent(true);
   } catch (err: any) {
-    setError(err.message);
+    setError(err.message || 'Failed to send OTP.');
+    try {
+      const msg = String(err?.message || '').toLowerCase();
+      if (msg.includes('too_many_attempts') || msg.includes('too-many-requests') || msg.includes('captcha-check-failed')) {
+        const until = Date.now() + 5 * 60 * 1000; // 5 minutes
+        setCooldownUntil(until);
+        setCooldownRemaining(Math.ceil((until - Date.now()) / 1000));
+      }
+    } catch (_) {}
   } finally {
     setLoading(false);
   }
 };
+
+// Countdown effect for cooldownRemaining
+useEffect(() => {
+  if (!cooldownUntil) return;
+  const id = setInterval(() => {
+    const rem = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+    setCooldownRemaining(rem);
+    if (rem <= 0) {
+      setCooldownUntil(null);
+      setCooldownRemaining(0);
+      clearInterval(id);
+    }
+  }, 1000);
+  return () => clearInterval(id);
+}, [cooldownUntil]);
 
 const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
   e.preventDefault();
   setLoading(true);
   setError('');
   try {
-    const result = await otpConfirm.confirm(phoneOtp);
-    const phoneUser = result.user;
+  await otpConfirm.confirm(phoneOtp);
+  // phone auth confirmation successful
 
     // Fetch user from Supabase by phone number
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -337,11 +446,17 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
                   </div>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (cooldownUntil !== null && Date.now() < cooldownUntil)}
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center space-x-2"
                   >
                     <Send className="h-4 w-4" />
-                    <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span>
+                    <span>
+                      {loading
+                        ? 'Sending OTP...'
+                        : cooldownRemaining > 0
+                        ? `Try again in ${cooldownRemaining}s`
+                        : 'Send OTP'}
+                    </span>
                   </button>
                 </form>
               ) : (

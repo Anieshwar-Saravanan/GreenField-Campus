@@ -17,3 +17,26 @@ export const auth = getAuth(app);
 auth.languageCode = 'it';
 auth.useDeviceLanguage();
 
+// // DEV DEBUG: print masked runtime firebase values and optionally disable
+// // app verification for local testing. Remove before production.
+// if (import.meta.env.DEV) {
+//   const mask = (s: string | undefined) => (s ? `${s.slice(0, 8)}...` : '');
+//   // eslint-disable-next-line no-console
+//   console.log('Firebase runtime:', {
+//     projectId: mask(firebaseConfig.projectId),
+//     apiKey: mask(firebaseConfig.apiKey),
+//     authDomain: firebaseConfig.authDomain ? 'present' : 'missing',
+//   });
+//   try {
+//     // Disable app verification for local testing only. Do NOT enable in prod.
+//     // This helps bypass reCAPTCHA during development when using test phone numbers.
+//     // @ts-ignore
+//     if (auth.settings) auth.settings.appVerificationDisabledForTesting = true;
+//     // eslint-disable-next-line no-console
+//     console.log('DEV: appVerificationDisabledForTesting = true');
+//   } catch (err) {
+//     // eslint-disable-next-line no-console
+//     console.warn('Could not set appVerificationDisabledForTesting', err);
+//   }
+// }
+

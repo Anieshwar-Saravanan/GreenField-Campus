@@ -113,6 +113,81 @@ const EnterMarks: React.FC = () => {
       return;
     }
 
+    // If marks entry is successful, ensure teacher <-> student links
+    try {
+      const teacherId = user?.id;
+      const targetStudentId = formData.studentId;
+
+      if (teacherId && targetStudentId) {
+        // Check if teacher is already linked to this student
+        const { data: existingLink, error: linkError } = await supabase
+          .from('student_teacher')
+          .select('id')
+          .eq('student_id', targetStudentId)
+          .eq('teacher_id', teacherId)
+          .maybeSingle();
+
+        if (linkError) {
+          console.warn('Error checking student_teachers link:', linkError);
+        }
+
+        // If no link exists, link all students in the same class+section to this teacher
+        if (!existingLink) {
+          // get the class and section of the selected student
+          const { data: stud, error: studErr } = await supabase
+            .from('students')
+            .select('id, class, section')
+            .eq('id', targetStudentId)
+            .maybeSingle();
+
+          if (studErr) {
+            console.warn('Error fetching student info for linking:', studErr);
+          }
+
+          if (stud && stud.class) {
+            const classVal = stud.class;
+            const sectionVal = stud.section;
+
+            // fetch all students in that class+section
+            let query = supabase.from('students').select('id');
+            query = query.eq('class', classVal);
+            if (sectionVal) query = query.eq('section', sectionVal);
+            const { data: classStudents, error: classStudentsErr } = await query;
+
+            if (classStudentsErr) {
+              console.warn('Error fetching class students for linking:', classStudentsErr);
+            } else if (classStudents && classStudents.length > 0) {
+              // get existing links for these students to avoid duplicate inserts
+              const studentIds = classStudents.map((s: any) => s.id);
+                const { data: existingLinks, error: existingLinksErr } = await supabase
+                .from('student_teacher')
+                .select('student_id')
+                .in('student_id', studentIds)
+                .eq('teacher_id', teacherId);
+
+              if (existingLinksErr) {
+                console.warn('Error fetching existing student_teachers links:', existingLinksErr);
+              }
+
+              const alreadyLinkedIds = new Set((existingLinks || []).map((r: any) => r.student_id));
+              const toInsert = studentIds
+                .filter((id: any) => !alreadyLinkedIds.has(id))
+                .map((id: any) => ({ student_id: id, teacher_id: teacherId }));
+
+              if (toInsert.length > 0) {
+                const { error: insertLinksErr } = await supabase.from('student_teacher').insert(toInsert);
+                if (insertLinksErr) {
+                  console.warn('Error inserting student_teacher links:', insertLinksErr);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (linkingErr) {
+      console.warn('Unexpected error while linking students to teacher:', linkingErr);
+    }
+
     // If marks entry is successful, send email to parent
     const { data: studentData } = await supabase
       .from('students')
@@ -122,7 +197,7 @@ const EnterMarks: React.FC = () => {
 
     if (studentData && studentData.parent_id) {
       // Get parent email
-      const { data: parentData } = await supabase
+      await supabase
         .from('users')
         .select('email')
         .eq('id', studentData.parent_id)
@@ -171,7 +246,7 @@ const EnterMarks: React.FC = () => {
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Marks Submitted Successfully!</h2>
-          <p className="text-gray-600">The marks have been recorded and parents will be notified.</p>
+          <p className="text-gray-600">The marks have been recorded</p>
         </div>
       </div>
     );

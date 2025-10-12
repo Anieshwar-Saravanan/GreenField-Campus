@@ -28,17 +28,19 @@ const Contact: React.FC = () => (
       transition={{ delay: 0.3 }}
     >
       <p className="text-green-700 font-semibold mb-2">📍 Address:</p>
-      <p className="mb-4">Greenfield Campus, 123 Learning Road, YourCity, State - 600000</p>
+      <p className="mb-4">11/34B, Udayampalayam Rd,
+Pallakattu Thottam, Gounder Mills,
+Coimbatore, Tamil Nadu 641029.</p>
 
       <p className="text-green-700 font-semibold mb-2">📞 Phone:</p>
       <p className="mb-4">+91-98765-43210</p>
 
       <p className="text-green-700 font-semibold mb-2">📧 Email:</p>
-      <p>contact@greenfieldschool.edu.in</p>
+      <p>campusgreenfield@gmail.com</p>
 
           <div className="flex gap-4">
             <a
-              href="https://www.instagram.com/"
+              href="https://www.instagram.com/greenfieldcampus?igsh=dzJ6ZjVrcXEzdXE0"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"
@@ -46,7 +48,7 @@ const Contact: React.FC = () => (
               <FaInstagram size={20} />
             </a>
             <a
-              href="https://www.facebook.com/"
+              href="https://www.facebook.com/share/1Lw4p5eRgs/?mibextid=wwXIfr"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"

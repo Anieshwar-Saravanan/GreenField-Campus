@@ -8,6 +8,7 @@ const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
 
   const [teacherStudents, setTeacherStudents] = useState<any[]>([]);
+  const [studentsById, setStudentsById] = useState<Record<string, string>>({});
   const [recentMarks, setRecentMarks] = useState<any[]>([]);
   const [classAverage, setClassAverage] = useState('0');
   const [recentTestName, setRecentTestName] = useState('');
@@ -18,15 +19,20 @@ const TeacherDashboard: React.FC = () => {
   // Fetch students and marks initially
   useEffect(() => {
     const fetchInitialData = async () => {
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('*')
+      // Fetch students linked to this teacher via the join table
+      const { data: joinRows } = await supabase
+        .from('student_teacher')
+        .select('student_id, students(*)')
         .eq('teacher_id', user?.id);
+
+      const studentsData = (joinRows || []).map((r: any) => r.students).filter(Boolean);
       setTeacherStudents(studentsData || []);
 
       const classSet = new Set<string>();
       (studentsData || []).forEach((s: any) => {
-        classSet.add(`${s.class}-${s.section}`);
+        // normalize section to avoid empty values
+        const sec = s.section || '';
+        classSet.add(`${s.class}-${sec}`);
       });
       const options = Array.from(classSet).map(str => {
         const [cls, sec] = str.split('-');
@@ -43,6 +49,25 @@ const TeacherDashboard: React.FC = () => {
         .eq('teacher_id', user?.id);
 
       setAllMarks(marksData || []);
+
+      // Build a map of student id -> student name for marks so we can show names
+      try {
+        const studentIds = Array.from(new Set((marksData || []).map((m: any) => m.student_id).filter(Boolean)));
+        if (studentIds.length > 0) {
+          const { data: studentsForMarks } = await supabase
+            .from('students')
+            .select('id, name')
+            .in('id', studentIds);
+          const map: Record<string, string> = {};
+          (studentsForMarks || []).forEach((s: any) => {
+            if (s?.id) map[s.id] = s.name || '';
+          });
+          setStudentsById(map);
+        }
+      } catch (err) {
+        // non-fatal; we'll fall back to id in UI
+        console.warn('Failed to fetch student names for marks', err);
+      }
 
       const sortedMarks = (marksData || []).sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -189,10 +214,12 @@ const TeacherDashboard: React.FC = () => {
             </thead>
             <tbody>
               {recentMarks.map((mark: any) => {
+                const studentNameFromMap = studentsById[mark.student_id];
                 const student = teacherStudents.find((s: any) => s.id === mark.student_id);
+                const displayName = studentNameFromMap || student?.name || mark.student_id;
                 return (
                   <tr key={mark.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">{student?.name || mark.student_id}</td>
+                    <td className="py-3 px-4">{displayName}</td>
                     <td className="py-3 px-4">{mark.subject}</td>
                     <td className="py-3 px-4 capitalize">{mark.exam_type.replace('-', ' ')}</td>
                     <td className="py-3 px-4">
