@@ -234,7 +234,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+      {/* <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
         <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center space-x-2">
           <Settings className="h-6 w-6 text-purple-600" />
           <span>Quick Actions</span>
@@ -262,7 +262,7 @@ const AdminDashboard: React.FC = () => {
             <p className="font-medium">System Settings</p>
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Modals */}
       {/* <Modal open={showStudentModal} onClose={() => setShowStudentModal(false)} title="Manage Students">

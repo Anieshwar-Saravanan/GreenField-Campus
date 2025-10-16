@@ -87,6 +87,33 @@ app.post('/api/verify-otp', async (req, res) => {
   res.json({ success: true, user });
 });
 
+// ✅ Route: Enquiry form -> send email to configured address
+app.post('/api/enquiry', async (req, res) => {
+  try {
+    const { studentName, parentName, email, phone, message } = req.body || {};
+    if (!studentName || !parentName || !email) {
+      return res.status(400).json({ error: 'studentName, parentName and email are required' });
+    }
+
+    // Default enquiries to configured env var or the provided fixed target
+    const toAddress = process.env.ENQUIRY_EMAIL || process.env.EMAIL_USER || 'Jonathansamuel59@gmail.com';
+    const subject = `New admission enquiry from ${parentName}`;
+    const body = `New admission enquiry received:\n\nStudent Name: ${studentName}\nParent Name: ${parentName}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\n\nMessage:\n${message || 'N/A'}\n\nReceived at: ${new Date().toISOString()}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toAddress,
+      subject,
+      text: body,
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to send enquiry email', err);
+    return res.status(500).json({ error: 'Failed to send enquiry' });
+  }
+});
+
 // ✅ Server setup
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, "0.0.0.0", () => {

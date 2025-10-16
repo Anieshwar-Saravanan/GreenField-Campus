@@ -33,7 +33,8 @@ Pallakattu Thottam, Gounder Mills,
 Coimbatore, Tamil Nadu 641029.</p>
 
       <p className="text-green-700 font-semibold mb-2">📞 Phone:</p>
-      <p className="mb-4">+91-98765-43210</p>
+      <p className="mb-4">+91 96003 66634 | 
+9894376100</p>
 
       <p className="text-green-700 font-semibold mb-2">📧 Email:</p>
       <p>campusgreenfield@gmail.com</p>
