@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Phone, Lock, Send, GraduationCap, UserPlus } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa';
 import SignUp from './SignUp';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPhoneNumber } from 'firebase/auth';
@@ -19,13 +18,13 @@ declare global {
 
 const Login: React.FC = () => {
   const [showSignUp, setShowSignUp] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'otp' | 'phone' | 'whatsapp'>('otp');
+  const [loginMethod, setLoginMethod] = useState<'email' | 'otp' | 'rollnumber'>('otp');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
-  const [whatsappOtp, setWhatsappOtp] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
+  const [rollNumberPassword, setRollNumberPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,6 +40,88 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login} = useAuth();
   const { loginWithOtp } = useAuth();
+
+  // Roll number login handler
+  const handleRollNumberLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      if (!rollNumber.trim() || !rollNumberPassword.trim()) {
+        throw new Error('Please enter both roll number and password');
+      }
+
+      // Query parent_credentials table
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+      // Find credential by username (roll number)
+      const { data: credential, error: credentialError } = await supabase
+        .from('parent_credentials')
+        .select('parent_id, password_hash')
+        .eq('username', rollNumber.trim())
+        .single();
+
+      if (credentialError) {
+        console.error('Credential lookup error:', credentialError);
+        if (credentialError.code === 'PGRST116') {
+          throw new Error('Roll number not found. Please check and try again.');
+        }
+        throw new Error(`Database error: ${credentialError.message}`);
+      }
+
+      if (!credential) {
+        throw new Error('Roll number not found. Please check and try again.');
+      }
+
+      // Verify password using bcrypt comparison via RPC function
+      const { data: verifyResult, error: verifyError } = await supabase.rpc(
+        'verify_parent_credential_password',
+        {
+          p_password_hash: credential.password_hash,
+          p_password: rollNumberPassword.trim()
+        }
+      );
+
+      if (verifyError) {
+        console.error('Password verification error:', verifyError);
+        throw new Error(`Password verification failed: ${verifyError.message}`);
+      }
+
+      if (!verifyResult) {
+        throw new Error('Invalid password. Please enter the last 4 digits of the roll number.');
+      }
+
+      // Get parent user data
+      const { data: parentUser, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email, phone, role')
+        .eq('id', credential.parent_id)
+        .single();
+
+      if (userError || !parentUser) {
+        throw new Error('User not found');
+      }
+
+      // Login user
+      if (typeof loginWithOtp === 'function') {
+        loginWithOtp({
+          id: parentUser.id,
+          name: parentUser.name || '',
+          email: parentUser.email,
+          phone: parentUser.phone || '',
+          role: parentUser.role,
+        });
+      }
+      navigate('/dashboard');
+    } catch (error: any) {
+      setError(error.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -144,63 +225,7 @@ const Login: React.FC = () => {
     }
   };
 
-  // WhatsApp OTP send
-  const handleWhatsAppSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const rawPhone = phone.replace(/\D/g, '');
-      const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
 
-      const response = await fetch('http://74.225.192.191:4000/api/send-whatsapp-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phoneWithCountryCode }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Failed to send WhatsApp OTP.');
-      setWhatsappOtpSent(true);
-    } catch (error: any) {
-      setError(error.message || 'Failed to send WhatsApp OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWhatsAppVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const rawPhone = phone.replace(/\D/g, '');
-      const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
-
-      const response = await fetch('http://74.225.192.191:4000/api/verify-phone-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phoneWithCountryCode, otp: whatsappOtp }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Invalid OTP.');
-
-      const user = result.user;
-      if (user && typeof loginWithOtp === 'function') {
-        loginWithOtp({
-          id: user.id,
-          name: user.name || '',
-          email: user.email,
-          phone: user.phone || '',
-          role: user.role,
-        });
-      }
-      navigate('/dashboard');
-    } catch (error: any) {
-      setError(error.message || 'Invalid OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
 const setupRecaptcha = async () => {
   try {
@@ -282,48 +307,48 @@ useEffect(() => {
   })();
 }, [loginMethod]);
 
-const handlePhoneSendOtp = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (cooldownUntil && Date.now() < cooldownUntil) {
-    setError(`Please wait ${cooldownRemaining}s before requesting another code.`);
-    return;
-  }
-  setLoading(true);
-  setError('');
-  try {
-    const rawPhone = phone.replace(/\D/g, '');
-    const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
-    const appVerifier = await setupRecaptcha();
+// const handlePhoneSendOtp = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   if (cooldownUntil && Date.now() < cooldownUntil) {
+//     setError(`Please wait ${cooldownRemaining}s before requesting another code.`);
+//     return;
+//   }
+//   setLoading(true);
+//   setError('');
+//   try {
+//     const rawPhone = phone.replace(/\D/g, '');
+//     const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
+//     const appVerifier = await setupRecaptcha();
 
-    // Log token presence without consuming it
-    try {
-      // @ts-ignore
-      const wid = window.recaptchaWidgetId;
-      // @ts-ignore
-      const grecaptcha = (window as any).grecaptcha;
-      if (wid != null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
-        const token = grecaptcha.getResponse(wid);
-        console.log('reCAPTCHA token length:', token ? token.length : 0);
-      }
-    } catch (_err) {}
+//     // Log token presence without consuming it
+//     try {
+//       // @ts-ignore
+//       const wid = window.recaptchaWidgetId;
+//       // @ts-ignore
+//       const grecaptcha = (window as any).grecaptcha;
+//       if (wid != null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
+//         const token = grecaptcha.getResponse(wid);
+//         console.log('reCAPTCHA token length:', token ? token.length : 0);
+//       }
+//     } catch (_err) {}
 
-    const confirmation = await signInWithPhoneNumber(auth, phoneWithCountryCode, appVerifier);
-    setOtpConfirm(confirmation);
-    setPhoneOtpSent(true);
-  } catch (err: any) {
-    setError(err.message || 'Failed to send OTP.');
-    try {
-      const msg = String(err?.message || '').toLowerCase();
-      if (msg.includes('too_many_attempts') || msg.includes('too-many-requests') || msg.includes('captcha-check-failed')) {
-        const until = Date.now() + 5 * 60 * 1000; // 5 minutes
-        setCooldownUntil(until);
-        setCooldownRemaining(Math.ceil((until - Date.now()) / 1000));
-      }
-    } catch (_) {}
-  } finally {
-    setLoading(false);
-  }
-};
+//     const confirmation = await signInWithPhoneNumber(auth, phoneWithCountryCode, appVerifier);
+//     setOtpConfirm(confirmation);
+//     setPhoneOtpSent(true);
+//   } catch (err: any) {
+//     setError(err.message || 'Failed to send OTP.');
+//     try {
+//       const msg = String(err?.message || '').toLowerCase();
+//       if (msg.includes('too_many_attempts') || msg.includes('too-many-requests') || msg.includes('captcha-check-failed')) {
+//         const until = Date.now() + 5 * 60 * 1000; // 5 minutes
+//         setCooldownUntil(until);
+//         setCooldownRemaining(Math.ceil((until - Date.now()) / 1000));
+//       }
+//     } catch (_) {}
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
 // Countdown effect for cooldownRemaining
 useEffect(() => {
@@ -340,60 +365,60 @@ useEffect(() => {
   return () => clearInterval(id);
 }, [cooldownUntil]);
 
-const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
-  try {
-  await otpConfirm.confirm(phoneOtp);
-  // phone auth confirmation successful
+// const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   setLoading(true);
+//   setError('');
+//   try {
+//   await otpConfirm.confirm(phoneOtp);
+//   // phone auth confirmation successful
 
-    // Fetch user from Supabase by phone number
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    // Remove all non-digit chars for comparison
-    const normalizedPhone = phone.replace(/\D/g, ''); // user input, 10 digits
-    // Query all users with a phone number
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('id, name, email, phone, role');
-    if (error || !users || users.length === 0) throw new Error('Phone number not registered. Please sign up first.');
-    // Find user with matching phone (normalize both sides, compare last 10 digits)
-    const user = users.find((u: any) => {
-      const dbPhone = String(u.phone || '').replace(/\D/g, '');
-      return dbPhone.slice(-10) === normalizedPhone;
-    });
-    if (!user) throw new Error('Phone number not registered. Please sign up first.');
+//     // Fetch user from Supabase by phone number
+//     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+//     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+//     const { createClient } = await import('@supabase/supabase-js');
+//     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+//     // Remove all non-digit chars for comparison
+//     const normalizedPhone = phone.replace(/\D/g, ''); // user input, 10 digits
+//     // Query all users with a phone number
+//     const { data: users, error } = await supabase
+//       .from('users')
+//       .select('id, name, email, phone, role');
+//     if (error || !users || users.length === 0) throw new Error('Phone number not registered. Please sign up first.');
+//     // Find user with matching phone (normalize both sides, compare last 10 digits)
+//     const user = users.find((u: any) => {
+//       const dbPhone = String(u.phone || '').replace(/\D/g, '');
+//       return dbPhone.slice(-10) === normalizedPhone;
+//     });
+//     if (!user) throw new Error('Phone number not registered. Please sign up first.');
 
-    // Set user and isAuthenticated in context (OTP flow)
-    if (typeof loginWithOtp === 'function') {
-      loginWithOtp({
-        id: user.id,
-        name: user.name || '',
-        email: user.email,
-        phone: user.phone || '',
-        role: user.role,
-      });
-    }
+//     // Set user and isAuthenticated in context (OTP flow)
+//     if (typeof loginWithOtp === 'function') {
+//       loginWithOtp({
+//         id: user.id,
+//         name: user.name || '',
+//         email: user.email,
+//         phone: user.phone || '',
+//         role: user.role,
+//       });
+//     }
 
-    // Redirect based on role
-    if (user.role === 'admin') {
-      navigate('/dashboard');
-    } else if (user.role === 'teacher') {
-      navigate('/dashboard');
-    } else if (user.role === 'parent') {
-      navigate('/dashboard');
-    } else {
-      navigate('/dashboard'); // fallback
-    }
-  } catch (err: any) {
-    setError(err.message || 'Invalid OTP');
-  } finally {
-    setLoading(false);
-  }
-};
+//     // Redirect based on role
+//     if (user.role === 'admin') {
+//       navigate('/dashboard');
+//     } else if (user.role === 'teacher') {
+//       navigate('/dashboard');
+//     } else if (user.role === 'parent') {
+//       navigate('/dashboard');
+//     } else {
+//       navigate('/dashboard'); // fallback
+//     }
+//   } catch (err: any) {
+//     setError(err.message || 'Invalid OTP');
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
 
   if (showSignUp) {
@@ -411,14 +436,14 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent">
               Greenfield Campus
             </h1>
-            <p className="text-gray-600 mt-2">Parent Portal Login</p>
+            <p className="text-gray-600 mt-2">User Portal Login</p>
           </div>
 
           <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
             <button
               type="button"
               onClick={() => setLoginMethod('otp')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all text-xs ${
                 loginMethod === 'otp'
                   ? 'bg-white text-emerald-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
@@ -429,34 +454,74 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
             </button>
             <button
               type="button"
+              onClick={() => setLoginMethod('rollnumber')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all text-xs ${
+                loginMethod === 'rollnumber'
+                  ? 'bg-white text-emerald-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span>Parent Login</span>
+            </button>
+            {/* <button
+              type="button"
               onClick={() => setLoginMethod('phone')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all text-xs ${
                 loginMethod === 'phone'
                   ? 'bg-white text-emerald-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
-            >
-              <Phone className="h-4 w-4" />
-              <span>Phone OTP</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginMethod('whatsapp')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all ${
-                loginMethod === 'whatsapp'
-                  ? 'bg-white text-emerald-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <FaWhatsapp className="h-4 w-4 text-green-600" />
-              <span>WhatsApp OTP</span>
-            </button>
+            > */}
+              {/* <Phone className="h-4 w-4" />
+              <span>Phone OTP</span> */}
+            {/* </button> */}
           </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
               {error}
             </div>
+          )}
+
+          {loginMethod === 'rollnumber' && (
+            <form onSubmit={handleRollNumberLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <div className="relative">
+                  <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Enter your username"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="password"
+                    value={rollNumberPassword}
+                    onChange={(e) => setRollNumberPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Password"
+                    required
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-emerald-600 hover:to-green-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
           )}
 
           {/* {loginMethod === 'email' && (
@@ -625,65 +690,7 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
             </>
           )}
 
-          {loginMethod === 'whatsapp' && (
-            <>
-              {!whatsappOtpSent ? (
-                <form onSubmit={handleWhatsAppSendOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        placeholder="+91 12345 67890"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center space-x-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>{loading ? 'Sending OTP...' : 'Send via WhatsApp'}</span>
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleWhatsAppVerifyOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
-                    <input
-                      type="text"
-                      value={whatsappOtp}
-                      onChange={(e) => setWhatsappOtp(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-lg tracking-widest"
-                      placeholder="000000"
-                      maxLength={6}
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-emerald-600 hover:to-green-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    {loading ? 'Verifying...' : 'Verify OTP'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setWhatsappOtpSent(false); setWhatsappOtp(''); setError(''); }}
-                    className="w-full text-gray-600 hover:text-gray-800 py-2 transition-colors"
-                  >
-                    Back to WhatsApp
-                  </button>
-                </form>
-              )}
-            </>
-          )}
+
 
           {/* <div className="mt-6 text-center">
             <button
@@ -700,6 +707,5 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
 
     </div>
   );
-};
-
+}
 export default Login;
