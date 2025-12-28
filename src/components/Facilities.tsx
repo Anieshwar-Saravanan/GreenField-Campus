@@ -10,7 +10,7 @@ const FacilityCard: React.FC<{ icon: string; title: string; description: string 
     className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center hover:shadow-xl transition"
     whileHover={{ scale: 1.05 }}
   >
-    <img src={icon} alt={title} className="h-20 mb-4" />
+  <img src={icon} alt={title} className="h-20 mb-4" loading="lazy" decoding="async" width={80} height={80} />
     <h3 className="font-semibold text-lg mb-2 text-green-800">{title}</h3>
     <p className="text-gray-600">{description}</p>
   </motion.div>

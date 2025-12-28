@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { sortClassObjects } from '../../lib/classSort';
 import MarksChart from '../Charts/MarksChart';
 import { Users, TrendingUp } from 'lucide-react';
 
@@ -25,7 +26,7 @@ const StudentPerformance: React.FC = () => {
         const [cls, sec] = str.split('-');
         return { class: cls, section: sec };
       });
-      setClassOptions(options);
+      setClassOptions(sortClassObjects(options));
       if (options.length > 0) setSelectedClass(options[0]);
       setLoading(false);
     };

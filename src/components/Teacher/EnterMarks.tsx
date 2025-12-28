@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { examTypeLabels } from '../../data/mockData';
+import { sortClassStrings } from '../../lib/classSort';
 import { PlusCircle, Save, CheckCircle } from 'lucide-react';
 import { Student } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -55,10 +56,10 @@ const EnterMarks: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const subjects = ['Mathematics', 'Science', 'English', 'Physics', 'Chemistry', 'Biology', 'Social Science', 'Commerce', 'Computer Science', 'Accountancy', 'Computer Application','Economics','Business maths'];
+  const subjects = ['Mathematics', 'Science', 'English', 'Physics', 'Chemistry', 'Biology', 'Social Science', 'Commerce', 'Computer Science', 'Accountancy', 'Computer Application','Economics','Business maths','Tamil','French'];
 
   // Get unique classes from students list
-  const classOptions = Array.from(new Set(students.map((s) => s.class))).sort();
+  const classOptions = sortClassStrings(Array.from(new Set(students.map((s) => s.class))));
   // Get unique sections for the selected class
   const sectionOptions = selectedClass
     ? Array.from(new Set(students.filter((s) => s.class === selectedClass).map((s) => s.section))).sort()
@@ -87,6 +88,25 @@ const EnterMarks: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    // Duplicate check: prevent inserting marks if one already exists for
+    // the same student, subject and exam type.
+    try {
+      const { data: existing } = await supabase
+        .from('marks')
+        .select('id')
+        .eq('student_id', formData.studentId)
+        .eq('subject', formData.subject)
+        .eq('exam_type', formData.examType)
+        .eq('date', formData.date)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        setErrorMsg('Marks already exist for this student, subject and test.');
+        return;
+      }
+    } catch (dupErr) {
+      console.warn('Duplicate check failed:', dupErr);
+    }
     // Find the selected student and capitalize their section
     const selectedStudent = students.find((s) => s.id === formData.studentId);
     let sectionToSend = '';

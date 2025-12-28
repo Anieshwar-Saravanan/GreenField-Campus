@@ -1,24 +1,93 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import {
+  FaMedal,
+  FaTrophy,
+  FaFutbol,
+  FaHockeyPuck,
+  FaLeaf,
+  FaTheaterMasks,
+  FaMicrophone,
+  FaBook,
+  FaLaptopCode,
+  FaAward,
+} from 'react-icons/fa';
 
-const achievementData = [
+// Structured achievements with categories and icons for a more appealing UI.
+const achievements = [
   {
-    title: '100% Board Exam Pass Rate',
-    year: '2020–2024',
-    description: 'Our students have maintained a consistent 100% pass rate in board exams for the last 4 years.',
-    image: '/achievements-2.png',
+    title: 'State-Level Silambam Champion',
+    description:
+      'Proud moment as our student shines at the state level in traditional Silambam!',
+    category: 'Sports',
+    icon: FaMedal,
   },
   {
-    title: 'State-Level Science Olympiad Winners',
-    year: '2023',
-    description: 'Greenfield students secured the top 3 positions in the TN State Science Olympiad.',
-    image: '/achievements-1.jpg',
+    title: '100% Board Exam Results',
+    description:
+      'Excellence achieved — every student passed with flying colours consistently every year.',
+    category: 'Academics',
+    icon: FaBook,
   },
   {
-    title: 'National Yoga Championship Gold',
-    year: '2022',
-    description: 'Our senior students won gold at the National Yoga Meet in Delhi.',
-    image: '/achievements-3.jpg',
+    title: 'District-Level Hockey Winners',
+    description: 'Green Fields hockey team triumphs with skill, teamwork, and spirit.',
+    category: 'Sports',
+    icon: FaHockeyPuck,
+  },
+  {
+    title: 'District-Level Football Champions',
+    description: 'Victory on the field — our football team brings home district glory!',
+    category: 'Sports',
+    icon: FaFutbol,
+  },
+  {
+    title: 'Participation in CM Trophy',
+    description: 'Proud participants in the Chief Minister’s Trophy — gaining experience and inspiration!',
+    category: 'Sports',
+    icon: FaTrophy,
+  },
+  {
+    title: 'Inter-School Cultural Fest Winners',
+    description: 'Creativity at its best! Our students stole the spotlight with their talent and teamwork!',
+    category: 'Cultural',
+    icon: FaTheaterMasks,
+  },
+  {
+    title: 'District-Level Singing Champions',
+    description: 'Melodies that mesmerized — congratulations to our young voices of Green Fields!',
+    category: 'Cultural',
+    icon: FaMicrophone,
+  },
+  {
+    title: 'Top Scorers in State-Level Quiz Competition',
+    description: 'Knowledge meets confidence! Our quiz team proved that learning truly pays off!',
+    category: 'Academics',
+    icon: FaAward,
+  },
+  {
+    title: 'Zonal-Level Badminton Winners',
+    description: 'Smash! Set! Win! Our badminton team displayed agility and determination on the court!',
+    category: 'Sports',
+    icon: FaMedal,
+  },
+  {
+    title: 'Best School Performance Award',
+    description: 'Proud moment as Green Fields is recognized for outstanding overall performance in academics and co-curriculars!',
+    category: 'Recognition',
+    icon: FaAward,
+  },
+  {
+    title: 'Eco Club – Green School Award',
+    description: 'Sustainability in action! Honoured for promoting eco-friendly initiatives on campus!',
+    category: 'Eco',
+    icon: FaLeaf,
+  },
+  {
+    title: 'Inter-School Coding Competition Winners',
+    description: 'Innovation meets intelligence — our tech wizards clinched the coding crown!',
+    category: 'Tech',
+    icon: FaLaptopCode,
   },
 ];
 
@@ -44,25 +113,36 @@ const Achievements: React.FC = () => {
         We take pride in our students' academic and co-curricular accomplishments.
       </motion.p>
 
-      {/* Achievement Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {achievementData.map((item, index) => (
-          <motion.div
-            key={index}
-            className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <img src={item.image} alt={item.title} className="w-full h-48 object-cover" />
-            <div className="p-5">
-              <h3 className="text-xl font-bold text-green-700 mb-1">{item.title}</h3>
-              <span className="text-sm text-gray-500">{item.year}</span>
-              <p className="text-gray-600 mt-2">{item.description}</p>
-            </div>
-          </motion.div>
-        ))}
+      {/* Visually enhanced grid of achievements (no images) */}
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {achievements.map((item, idx) => {
+            const Icon = item.icon as any;
+            return (
+              <motion.div
+                key={idx}
+                className="bg-white rounded-lg shadow-md p-5 flex items-start space-x-4 hover:shadow-xl transition-shadow"
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: idx * 0.04 }}
+              >
+                <div className="flex-shrink-0">
+                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-emerald-400 to-green-700 flex items-center justify-center text-white text-xl shadow">
+                    <Icon />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-lg font-semibold text-green-800">{item.title}</h3>
+                    <span className="ml-auto text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{item.category}</span>
+                  </div>
+                  <p className="text-gray-600 mt-2">{item.description}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Bottom Quote */}

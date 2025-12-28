@@ -208,22 +208,26 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ activeTab }) => {
             {selectedStudent && (
               <>
                 <MarksOverview marks={allMarks} studentName={selectedStudent.name} />
-                <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-gray-800">Subject-wise Progress</h2>
-                  {subjects.map(subject => (
-                    <MarksChart
-                      key={subject}
-                      subject={subject}
-                      marks={allMarks
-                        .filter(m => m.subject === subject)
-                        .map(m => ({
-                          exam: m.examType,
-                          percentage: (m.marks / m.totalMarks) * 100
-                        }))
-                      }
-                    />
-
-                  ))}
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold mb-4">Progress Charts</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {subjects.map(subject => {
+                      const subjectMarks = allMarks.filter(mark => mark.subject === subject);
+                      const chartData = subjectMarks.map(m => ({
+                        subject: m.subject,
+                        exam: m.examType,
+                        percentage: (m.marks / m.totalMarks) * 100,
+                      }));
+                      return (
+                        <div key={subject} className="border p-4 rounded-lg shadow">
+                          <h3 className="text-lg font-bold text-gray-700 mb-2">{subject}</h3>
+                          <div style={{ height: '300px' }}>
+                            <MarksChart marks={chartData} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </>
             )}

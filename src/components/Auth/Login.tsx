@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Phone, Lock, Send, GraduationCap, UserPlus } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 import SignUp from './SignUp';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPhoneNumber } from 'firebase/auth';
@@ -18,11 +19,13 @@ declare global {
 
 const Login: React.FC = () => {
   const [showSignUp, setShowSignUp] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'otp' | 'phone'>('otp');
+  const [loginMethod, setLoginMethod] = useState<'email' | 'otp' | 'phone' | 'whatsapp'>('otp');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
+  const [whatsappOtp, setWhatsappOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -133,6 +136,64 @@ const Login: React.FC = () => {
         });
       }
       // Redirect based on role (keep existing route logic)
+      navigate('/dashboard');
+    } catch (error: any) {
+      setError(error.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // WhatsApp OTP send
+  const handleWhatsAppSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const rawPhone = phone.replace(/\D/g, '');
+      const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
+
+      const response = await fetch('http://74.225.192.191:4000/api/send-whatsapp-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneWithCountryCode }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to send WhatsApp OTP.');
+      setWhatsappOtpSent(true);
+    } catch (error: any) {
+      setError(error.message || 'Failed to send WhatsApp OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const rawPhone = phone.replace(/\D/g, '');
+      const phoneWithCountryCode = phone.trim().startsWith('+') ? phone.trim() : `+91${rawPhone}`;
+
+      const response = await fetch('http://74.225.192.191:4000/api/verify-phone-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneWithCountryCode, otp: whatsappOtp }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Invalid OTP.');
+
+      const user = result.user;
+      if (user && typeof loginWithOtp === 'function') {
+        loginWithOtp({
+          id: user.id,
+          name: user.name || '',
+          email: user.email,
+          phone: user.phone || '',
+          role: user.role,
+        });
+      }
       navigate('/dashboard');
     } catch (error: any) {
       setError(error.message || 'Invalid OTP. Please try again.');
@@ -378,6 +439,18 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
               <Phone className="h-4 w-4" />
               <span>Phone OTP</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('whatsapp')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-all ${
+                loginMethod === 'whatsapp'
+                  ? 'bg-white text-emerald-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <FaWhatsapp className="h-4 w-4 text-green-600" />
+              <span>WhatsApp OTP</span>
+            </button>
           </div>
 
           {error && (
@@ -546,6 +619,66 @@ const handlePhoneVerifyOtp = async (e: React.FormEvent) => {
                     className="w-full text-gray-600 hover:text-gray-800 py-2 transition-colors"
                   >
                     Back to Phone
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+
+          {loginMethod === 'whatsapp' && (
+            <>
+              {!whatsappOtpSent ? (
+                <form onSubmit={handleWhatsAppSendOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="+91 12345 67890"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center space-x-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>{loading ? 'Sending OTP...' : 'Send via WhatsApp'}</span>
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleWhatsAppVerifyOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+                    <input
+                      type="text"
+                      value={whatsappOtp}
+                      onChange={(e) => setWhatsappOtp(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-lg tracking-widest"
+                      placeholder="000000"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-emerald-600 hover:to-green-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {loading ? 'Verifying...' : 'Verify OTP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setWhatsappOtpSent(false); setWhatsappOtp(''); setError(''); }}
+                    className="w-full text-gray-600 hover:text-gray-800 py-2 transition-colors"
+                  >
+                    Back to WhatsApp
                   </button>
                 </form>
               )}

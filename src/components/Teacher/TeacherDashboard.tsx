@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { BookOpen, Users, TrendingUp, Award } from 'lucide-react';
 import MarksChart from '../Charts/MarksChart';
+import { sortClassObjects } from '../../lib/classSort';
 
 const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ const TeacherDashboard: React.FC = () => {
         const [cls, sec] = str.split('-');
         return { class: cls, section: sec };
       });
-      setClassOptions(options);
+      setClassOptions(sortClassObjects(options));
       if (!selectedClass && options.length > 0) {
         setSelectedClass(options[0]);
       }

@@ -29,7 +29,7 @@ const Contact: React.FC = () => (
     >
       <p className="text-green-700 font-semibold mb-2">📍 Address:</p>
       <p className="mb-4">11/34B, Udayampalayam Rd,
-Pallakattu Thottam, Gounder Mills,
+ Gounder Mills,
 Coimbatore, Tamil Nadu 641029.</p>
 
       <p className="text-green-700 font-semibold mb-2">📞 Phone:</p>
@@ -57,7 +57,7 @@ Coimbatore, Tamil Nadu 641029.</p>
               <FaFacebookF size={20} />
             </a>
             <a
-              href="https://wa.me/919876543210" // Replace with actual WhatsApp number
+              href="https://wa.me/919894376100"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"

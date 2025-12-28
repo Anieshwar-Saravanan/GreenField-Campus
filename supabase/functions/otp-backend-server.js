@@ -87,6 +87,116 @@ app.post('/api/verify-otp', async (req, res) => {
   res.json({ success: true, user });
 });
 
+// ----- WhatsApp OTP routes -----
+// Environment variables required:
+// WHATSAPP_PHONE_NUMBER_ID - the phone number id from the WhatsApp Business account
+// WHATSAPP_ACCESS_TOKEN - bearer token for the WhatsApp Business API
+app.post('/api/send-whatsapp-otp', async (req, res) => {
+  try {
+    const { phone } = req.body || {};
+    if (!phone) return res.status(400).json({ error: 'Phone number required' });
+
+    // Normalize phone to E.164-ish digits only (keep leading + if provided)
+    const normalized = String(phone).trim();
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+    // Store OTP in Supabase table `phone_otps`
+    const { error: insertErr } = await supabase
+      .from('phone_otps')
+      .insert({ phone: normalized, otp, expires_at: expiresAt });
+    if (insertErr) {
+      console.error('Failed to store phone otp', insertErr);
+      return res.status(500).json({ error: 'Failed to store OTP' });
+    }
+
+    // Send via WhatsApp Business API (Meta Graph)
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    if (!phoneNumberId || !token) {
+      console.error('WhatsApp credentials missing');
+      return res.status(500).json({ error: 'WhatsApp credentials not configured' });
+    }
+
+    const url = `https://graph.facebook.com/v15.0/${phoneNumberId}/messages`;
+    const body = {
+      messaging_product: 'whatsapp',
+      to: normalized,
+      type: 'text',
+      text: { body: `Your GreenField Campus OTP is: ${otp}. It expires in 5 minutes.` },
+    };
+
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!r.ok) {
+      const txt = await r.text();
+      console.error('WhatsApp send failed', r.status, txt);
+      return res.status(500).json({ error: 'Failed to send WhatsApp message' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('send-whatsapp-otp error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/verify-phone-otp', async (req, res) => {
+  try {
+    const { phone, otp } = req.body || {};
+    if (!phone || !otp) return res.status(400).json({ error: 'Phone and OTP required' });
+
+    const normalized = String(phone).trim();
+
+    const { data, error } = await supabase
+      .from('phone_otps')
+      .select('*')
+      .eq('phone', normalized)
+      .eq('otp', otp)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (error || !data) return res.status(401).json({ error: 'Invalid or expired OTP' });
+
+    // delete used OTP
+    await supabase.from('phone_otps').delete().eq('id', data.id);
+
+    // attempt to fetch user by phone
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, name, email, phone, role')
+      .eq('phone', normalized)
+      .single();
+
+    if (userError || !user) {
+      // Fallback: try matching by last 10 digits
+      const { data: users, error: usersErr } = await supabase
+        .from('users')
+        .select('id, name, email, phone, role');
+      if (!usersErr && users && users.length) {
+        const found = users.find((u) => String(u.phone || '').replace(/\D/g, '').slice(-10) === String(normalized).replace(/\D/g, '').slice(-10));
+        if (found) {
+          return res.json({ success: true, user: found });
+        }
+      }
+      return res.json({ success: true, user: null });
+    }
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error('verify-phone-otp error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ✅ Route: Enquiry form -> send email to configured address
 app.post('/api/enquiry', async (req, res) => {
   try {

@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/is-prop-valid": "^1.4.0",
     "@mailchimp/mailchimp_transactional": "^1.0.59",
     "@supabase/supabase-js": "^2.52.0",
     "bcrypt": "^6.0.0",

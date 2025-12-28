@@ -29,7 +29,14 @@ const LandingNav: React.FC = () => {
     <nav className="bg-gradient-to-r from-green-700 via-emerald-500 to-green-400 shadow-lg px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-30">
       {/* Logo and Brand */}
       <div className="flex items-center gap-4">
-        <img src={schoolLogo} alt="School Logo" className="h-14 w-14 rounded-full bg-white p-1 shadow-md border-2 border-white" />
+        <img
+          src={schoolLogo}
+          alt="School Logo"
+          className="h-14 w-14 rounded-full bg-white p-1 shadow-md border-2 border-white"
+          decoding="async"
+          width={56}
+          height={56}
+        />
         <Link to="/" className="text-xl sm:text-3xl font-extrabold text-white drop-shadow-lg tracking-wide hover:text-lime-100 transition">Greenfield Campus</Link>
       </div>
 

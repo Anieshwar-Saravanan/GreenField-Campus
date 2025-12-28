@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
 // Backend URL - use Vite env var or fallback to localhost
-const BACKEND_BASE = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_BASE = 'http://74.225.192.191:4000';
 
 const Admissions: React.FC = () => {
   const [studentName, setStudentName] = useState('');
@@ -81,7 +81,7 @@ const Admissions: React.FC = () => {
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.3 }}>
         <h2 className="text-2xl font-bold text-green-700 mb-3">Seat Intake</h2>
         <p className="text-gray-700">
-          Limited seats available for Class IX to XII for the academic year <strong>2025–26</strong>.
+          Limited seats available for Class IX to XII for the academic year <strong>2026–27</strong>.
         </p>
       </motion.section>
     </div>

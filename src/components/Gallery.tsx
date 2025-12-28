@@ -102,7 +102,13 @@ const Gallery: React.FC = () => {
           ) : (
             filteredMedia.map((m, i) => (
               <motion.div key={i} className="rounded overflow-hidden shadow-lg" whileHover={{ scale: 1.02 }}>
-                <img src={m.url} alt="Gallery" className="w-full h-auto" />
+                <img
+                  src={m.url}
+                  alt="Gallery"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </motion.div>
             ))
           )}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { FaCrown, FaTrophy, FaChalkboardTeacher, FaCheckCircle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaCrown, FaTrophy } from 'react-icons/fa';
 
 const AboutUs: React.FC = () => {
   return (
@@ -8,19 +9,49 @@ const AboutUs: React.FC = () => {
         About Greenfield Campus
       </h1>
 
-      {/* Vision & Mission */}
-      <section className="mb-12 bg-green-50 p-6 rounded-xl shadow-md">
-        <h2 className="text-2xl font-semibold text-green-700 mb-3 border-l-4 border-green-500 pl-4">Vision & Mission</h2>
-        <p className="text-white-700 text-lg leading-relaxed">
-          At <span className="font-semibold text-emerald-700">Greenfield Campus</span>Greenfield Campus (VCSM Matriculation Higher Secondary School) is dedicated to shaping the future
-through quality education, value-based learning, and holistic student development. Every child is
-empowered to reach their full potential through a balanced blend of academics, discipline, creativity,
-and care.
-The campus is surrounded by lush greenery, filled with a wide variety of plants that create a peaceful
-and eco-friendly atmosphere. This natural setting contributes to a healthy and inspiring learning
-environment.
-          <span className="italic text-green-600 "><strong>"Educate, Empower, and Excel"</strong></span>
-        </p>
+      {/* Vision & Mission - updated with attractive cards */}
+      <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 shadow-lg border border-emerald-100"
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center mb-4">
+            <div className="h-12 w-12 rounded-full bg-emerald-600 flex items-center justify-center text-white mr-3">
+              <FaCrown />
+            </div>
+            <h3 className="text-2xl font-bold text-green-800">Our Vision</h3>
+          </div>
+          <p className="text-gray-700 leading-relaxed text-lg">
+            The vision of Green Fields School is to nurture a generation of confident, compassionate, and creative learners who grow in harmony with nature and society. Our goal is to provide a learning environment where academic excellence blends with environmental awareness, character development, and global citizenship.
+          </p>
+          <p className="mt-4 text-gray-700 leading-relaxed text-lg">
+            Through innovative teaching, sustainability practices, and community engagement, we aim to cultivate young minds that think critically, act responsibly, and care deeply for the world around them. At Green Fields, every child is encouraged to explore, dream, and grow like seeds planted in rich soil — flourishing into responsible individuals who contribute positively to a greener, brighter future.
+          </p>
+        </motion.div>
+
+        <motion.div
+          className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 shadow-lg border border-emerald-100"
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.08 }}
+        >
+          <div className="flex items-center mb-4">
+            <div className="h-12 w-12 rounded-full bg-green-700 flex items-center justify-center text-white mr-3">
+              <FaTrophy />
+            </div>
+            <h3 className="text-2xl font-bold text-green-800">Our Mission</h3>
+          </div>
+          <p className="text-gray-700 leading-relaxed text-lg">
+            Guided by our mission to <strong>Educate, Empower, and Excel</strong>, we strive to inspire lifelong learning, instill strong values, and equip our students with the skills and confidence to lead with purpose and make a meaningful difference in the world.
+          </p>
+          <p className="mt-4 text-gray-700 leading-relaxed text-lg">
+            We focus on holistic development — academic rigor, character-building, environmental stewardship, and community service — so every student graduates ready to succeed and contribute positively to society.
+          </p>
+        </motion.div>
       </section>
 
       {/* Correspondent's Note */}
@@ -34,7 +65,7 @@ It gives me immense pride and joy to welcome you to our institution, a place whe
 character, and dreams take root in a nurturing and vibrant environment.
 At Greenfield, we believe that education is not just about academics, but about building lives. Our
 school stands as a beacon of quality education, offering a balanced platform that combines academic
-excellence, moral values, discipline, and creativity. From NEET-focused training to state-level sports
+excellence, moral values, discipline, and creativity. From excelled academics to state-level sports
 achievements, from hands-on competitions to educational trips—we ensure our students receive every
 opportunity to grow into confident and capable individuals.
 Our lush green campus isn’t just a backdrop—it’s a part of our philosophy. The calm and eco-friendly
@@ -62,9 +93,6 @@ Greenfield Campus (VCSM Matriculation Higher Secondary School)</span>
           <li><strong>Green and Peaceful Campus</strong><br />
 The school is known for its beautifully maintained, plant-rich surroundings that promote calmness,
 focus, and overall student well-being.</li>
-          <li><strong>Academic Excellence with NEET Coaching</strong><br />
-Greenfield Campus offers a strong academic foundation along with specialized NEET training to
-prepare higher secondary students for competitive medical entrance exams.</li>
           <li><strong>Sports and State-Level Participation</strong><br />
 Students regularly represent the school in district and state-level competitions, excelling in sports
 such as hockey, kabaddi, and athletics, fostering teamwork, discipline, and physical strength.</li>
@@ -85,40 +113,7 @@ and rewarded for their achievements, promoting a spirit of healthy competition a
         </ul>
       </section>
 
-      {/* Milestones */}
-      {/* <section>
-        <h2 className="text-2xl font-semibold text-green-700 mb-6 border-l-4 border-green-500 pl-4">Milestones</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="flex items-start bg-white p-4 rounded-lg shadow">
-            <FaCrown className="text-green-600 text-2xl mr-4 mt-1" />
-            <div>
-              <h3 className="font-semibold text-lg text-gray-800">1995 – School Established</h3>
-              <p className="text-sm text-gray-600">Founded with a vision to transform education in our region.</p>
-            </div>
-          </div>
-          <div className="flex items-start bg-white p-4 rounded-lg shadow">
-            <FaTrophy className="text-yellow-500 text-2xl mr-4 mt-1" />
-            <div>
-              <h3 className="font-semibold text-lg text-gray-800">2005 – First State Rank</h3>
-              <p className="text-sm text-gray-600">Our students began topping state exams with flying colors.</p>
-            </div>
-          </div>
-          <div className="flex items-start bg-white p-4 rounded-lg shadow">
-            <FaChalkboardTeacher className="text-blue-500 text-2xl mr-4 mt-1" />
-            <div>
-              <h3 className="font-semibold text-lg text-gray-800">2015 – Smart Classrooms Introduced</h3>
-              <p className="text-sm text-gray-600">We integrated smart tech into our teaching ecosystem.</p>
-            </div>
-          </div>
-          <div className="flex items-start bg-white p-4 rounded-lg shadow">
-            <FaCheckCircle className="text-green-500 text-2xl mr-4 mt-1" />
-            <div>
-              <h3 className="font-semibold text-lg text-gray-800">2020 – 100% Board Exam Pass Rate</h3>
-              <p className="text-sm text-gray-600">A proud year of 100% pass rate and distinction for many.</p>
-            </div>
-          </div>
-        </div>
-      </section> */}
+      {/* Milestones removed - keep here for future content or reintroduce as needed. */}
     </div>
   );
 };

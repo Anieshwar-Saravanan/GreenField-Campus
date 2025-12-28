@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import MarksChart from '../Charts/MarksChart';
 import { Users, TrendingUp } from 'lucide-react';
+import { sortClassObjects } from '../../lib/classSort';
 
 const TeacherPerformance: React.FC = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -10,7 +11,6 @@ const TeacherPerformance: React.FC = () => {
   const [marks, setMarks] = useState<any[]>([]);
   const [classOptions, setClassOptions] = useState<{class: string, section: string}[]>([]);
   const [selectedClass, setSelectedClass] = useState<{class: string, section: string} | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -21,40 +21,178 @@ const TeacherPerformance: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedTeacher) return;
-    setLoading(true);
-    const fetchStudentsAndMarks = async () => {
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('*')
-        .eq('teacher_id', selectedTeacher.id);
-      setStudents(studentsData || []);
-      // Get all unique class-section pairs
+    if (!selectedTeacher?.id) return;
+
+    // reset relevant state while loading new teacher data
+    setClassOptions([]);
+    setSelectedClass(null);
+    setMarks([]);
+    setStudents([]);
+
+    const fetchTeacherData = async () => {
+      // 1) fetch marks authored by this teacher. Try by `id` first; if none found, try `uuid` (schema differences).
+      let allMarks: any[] = [];
+      try {
+        const { data: marksData, error: marksError } = await supabase
+          .from('marks')
+          .select('*, students(*)')
+          .eq('teacher_id', selectedTeacher.id);
+        if (!marksError && marksData && marksData.length > 0) {
+          allMarks = marksData;
+        } else {
+          // try fallback using uuid if available and different
+          if (selectedTeacher.uuid && selectedTeacher.uuid !== selectedTeacher.id) {
+            const { data: marksData2, error: marksError2 } = await supabase
+              .from('marks')
+              .select('*, students(*)')
+              .eq('teacher_id', selectedTeacher.uuid);
+            if (!marksError2 && marksData2 && marksData2.length > 0) {
+              allMarks = marksData2;
+            } else if (marksError || marksError2) {
+              console.warn('Error fetching marks for teacher (both id & uuid):', marksError || marksError2);
+            }
+          } else if (marksError) {
+            console.warn('Error fetching marks for teacher by id:', marksError);
+          }
+        }
+      } catch (e) {
+        console.error('Unexpected error fetching marks for teacher:', e);
+      }
+
+      // ensure we always have an array
+      allMarks = allMarks || [];
+      // debug
+      console.debug('[TeacherPerformance] fetched marks count for teacher', selectedTeacher.id, allMarks.length, allMarks.slice(0,3));
+      setMarks(allMarks);
+
+      // 2) derive unique students. If marks include a joined `students` object use it,
+      // otherwise fetch students by the student_id values from marks.
+      let uniqueStudents: any[] = [];
+      const hasJoinedStudents = allMarks.some((m: any) => m.students && (m.students.id || m.students.uuid));
+      if (hasJoinedStudents) {
+        const studentMap = new Map<string, any>();
+        allMarks.forEach((mark: any) => {
+          const sid = mark.students && (mark.students.id || mark.students.uuid);
+          if (mark.students && sid) studentMap.set(String(sid), mark.students);
+        });
+        uniqueStudents = Array.from(studentMap.values());
+      } else {
+        const studentIds = Array.from(new Set(allMarks.map((m: any) => m.student_id).filter(Boolean)));
+        if (studentIds.length > 0) {
+          const { data: studentsData, error: studentsError } = await supabase
+            .from('students')
+            .select('*')
+            .in('id', studentIds as any[]);
+          if (studentsError) {
+            console.error('Error fetching students separately:', studentsError);
+          } else {
+            uniqueStudents = studentsData || [];
+          }
+        }
+      }
+      setStudents(uniqueStudents);
+
+      // 3) build unique class-section pairs from students
       const classSet = new Set<string>();
-      (studentsData || []).forEach((s: any) => {
-        classSet.add(`${s.class}-${s.section}`);
+      uniqueStudents.forEach((s: any) => {
+        if (s.class) classSet.add(`${s.class}-${s.section || ''}`);
       });
+
+      // 4) include teacher's assigned class if they are marked as class teacher
+      // Try to find the teacher row by `uuid` (some schemas use `uuid`), but fall back to `id` if that fails.
+      let teacherRoleData: any = null;
+      let teacherRoleError: any = null;
+      try {
+        const res = await supabase
+          .from('teachers')
+          .select('is_class_teacher, class, section')
+          .eq('user_id', selectedTeacher.id)
+          .single();
+        teacherRoleData = res.data;
+        teacherRoleError = res.error;
+      } catch (e) {
+        // ignore - we'll try fallback below
+      }
+
+      if ((!teacherRoleData || teacherRoleError) && selectedTeacher?.id) {
+        // fallback to searching by `id` column if `uuid` didn't return anything
+        const res2 = await supabase
+          .from('teachers')
+          .select('is_class_teacher, class, section')
+          .eq('id', selectedTeacher.id)
+          .single();
+        if (!res2.error) {
+          teacherRoleData = res2.data;
+          teacherRoleError = res2.error;
+        } else {
+          // keep the original error if any
+          teacherRoleError = teacherRoleError || res2.error;
+        }
+      }
+
+      if (!teacherRoleError && teacherRoleData?.is_class_teacher && teacherRoleData.class) {
+        classSet.add(`${teacherRoleData.class}-${teacherRoleData.section || ''}`);
+      }
+
+      console.debug('[TeacherPerformance] derived class options count', classSet.size, 'teacherRole', teacherRoleData);
+
       const options = Array.from(classSet).map(str => {
         const [cls, sec] = str.split('-');
-        return { class: cls, section: sec };
+        return { class: cls, section: sec || '' };
       });
-      setClassOptions(options);
-      if (options.length > 0) setSelectedClass(options[0]);
-      const { data: marksData } = await supabase
-        .from('marks')
-        .select('*')
-        .eq('teacher_id', selectedTeacher.id);
-      setMarks(marksData || []);
-      setLoading(false);
+
+      const sortedOptions = sortClassObjects(options);
+      setClassOptions(sortedOptions);
+
+      // 5) select default class: teacher assigned class first, else first option
+      if (!teacherRoleError && teacherRoleData?.is_class_teacher && teacherRoleData.class) {
+        setSelectedClass({ class: teacherRoleData.class, section: teacherRoleData.section || '' });
+      } else if (sortedOptions.length > 0) {
+        setSelectedClass(sortedOptions[0]);
+      } else {
+        setSelectedClass(null);
+      }
     };
-    fetchStudentsAndMarks();
+
+    fetchTeacherData();
   }, [selectedTeacher]);
 
+  // When a class is selected, ensure we have students for that class.
+  // Some schemas don't return joined student objects with marks, so fetch students by class-section to be safe.
+  useEffect(() => {
+    if (!selectedClass || !selectedTeacher) return;
+
+    const fetchStudentsByClass = async () => {
+      try {
+        // fetch students by class; filter by section on the client because some DB rows have null/empty section
+        const { data: classStudents, error: classStudentsErr } = await supabase
+          .from('students')
+          .select('*')
+          .eq('class', selectedClass.class);
+
+        if (classStudentsErr) {
+          console.warn('Error fetching students for selected class:', classStudentsErr);
+          return;
+        }
+
+        if (classStudents && classStudents.length > 0) {
+          // Merge with existing students but prefer the freshly fetched class list for matching
+          setStudents(classStudents as any[]);
+        }
+      } catch (err) {
+        console.warn('Unexpected error fetching students by class:', err);
+      }
+    };
+
+    fetchStudentsByClass();
+  }, [selectedClass, selectedTeacher]);
+
   // Filter students and marks for selected class-section
+  // Normalize id comparisons to strings to avoid type mismatches between DB and joined rows
   const filteredStudents = selectedClass
-    ? students.filter((s: any) => s.class === selectedClass.class && s.section === selectedClass.section)
+    ? students.filter((s: any) => s.class === selectedClass.class && (s.section || '') === selectedClass.section)
     : [];
-  const filteredMarks = marks.filter((m: any) => filteredStudents.some((s: any) => s.id === m.student_id));
+  const filteredMarks = marks.filter((m: any) => filteredStudents.some((s: any) => String(s.id) === String(m.student_id)));
   const subjects = Array.from(new Set(filteredMarks.map(m => m.subject)));
 
   // Calculate class average for most recent test
@@ -89,13 +227,13 @@ const TeacherPerformance: React.FC = () => {
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
           value={selectedTeacher ? selectedTeacher.id : ''}
           onChange={e => {
-            const teacher = teachers.find(t => t.id === e.target.value);
+            const teacher = teachers.find(t => String(t.id) === e.target.value);
             setSelectedTeacher(teacher || null);
           }}
         >
           <option value="">Choose a teacher</option>
           {teachers.map(teacher => (
-            <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
+            <option key={teacher.id} value={String(teacher.id)}>{teacher.name}</option>
           ))}
         </select>
       </div>
@@ -106,14 +244,20 @@ const TeacherPerformance: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
               <select
                 className="px-3 py-2 border rounded-lg text-lg font-bold text-gray-800 bg-gray-50"
-                value={selectedClass ? `${selectedClass.class}-${selectedClass.section}` : ''}
+                value={selectedClass ? JSON.stringify(selectedClass) : ''}
                 onChange={e => {
-                  const [cls, sec] = e.target.value.split('-');
-                  setSelectedClass({ class: cls, section: sec });
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    setSelectedClass(parsed || null);
+                  } catch (err) {
+                    // fallback to old parsing if value isn't JSON
+                    const [cls, sec] = e.target.value.split('-');
+                    setSelectedClass({ class: cls, section: sec || '' });
+                  }
                 }}
               >
                 {classOptions.map(opt => (
-                  <option key={`${opt.class}-${opt.section}`} value={`${opt.class}-${opt.section}`}>{opt.class}{opt.section}</option>
+                  <option key={`${opt.class}-${opt.section}`} value={JSON.stringify(opt)}>{opt.class}{opt.section}</option>
                 ))}
               </select>
             </div>
@@ -137,20 +281,18 @@ const TeacherPerformance: React.FC = () => {
                 const subjectMarks = filteredMarks
                 .filter((mark: any) => mark.subject === subject);
 
-                const examTypes = Array.from(new Set(subjectMarks.map(m => m.exam_type)));
-
-                const chartData = examTypes.map(examType => {
-                const examMarks = subjectMarks.filter(m => m.exam_type === examType);
-                const avg = examMarks.reduce((sum, m) => sum + (m.marks / m.total_marks) * 100, 0) / examMarks.length;
-                return {
-                    exam: examType,
-                    percentage: Number(avg.toFixed(1))
-                };
-                });
+                const chartData = subjectMarks.map(m => ({
+                  subject: m.subject,
+                  exam: m.exam_type,
+                  percentage: (m.marks / m.total_marks) * 100,
+                }));
 
                 return (
-                <div key={subject}>
-                    <MarksChart marks={chartData} subject={subject} isAverage />
+                <div key={subject} className="border p-4 rounded-lg shadow">
+                  <h3 className="text-lg font-bold text-gray-700 mb-2">{subject}</h3>
+                  <div style={{ height: '480px' }}>
+                    <MarksChart marks={chartData} isAverage />
+                  </div>
                 </div>
                 );
 

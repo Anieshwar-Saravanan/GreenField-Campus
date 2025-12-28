@@ -13,19 +13,58 @@ import schoolEntrance1 from '/school entrance1.jpeg';
 import school from '/school slide.jpeg'
 const testimonials = [
   {
-    name: 'Mohammed Sadiq',
-    role: 'Parent',
-    review: 'GreenField School has transformed my child’s learning experience. The teachers are caring and the campus is vibrant!',
+    name: 'Mrs. Latha Kumar',
+    role: 'Parent of Meera, Grade 6',
+    review:
+      'We moved from Erode just so our daughter could join GreenField Campus — and it\'s been worth it. The teachers are caring, and under Mr. Sham Herald\'s experienced leadership, learning feels meaningful. Meera has grown confident and disciplined.',
   },
   {
-    name: 'Priya S',
-    role: 'Student',
-    review: 'I love the activities and the friendly environment. I feel encouraged to do my best every day!',
+    name: 'Mr. & Mrs. Rajesh Iyer',
+    role: 'Parents',
+    review:
+      'The school blends academics with strong values. The lush campus and eco-drives have taught our son to respect nature — lessons that go beyond textbooks.',
   },
   {
-    name: 'Mukunthan S',
-    role: 'Teacher',
-    review: 'Teaching at GreenField is a joy. The staff and students make every day rewarding.',
+    name: 'Mr. Arun Kumar',
+    role: 'Parent of Adhith, Grade 5',
+    review:
+      'GreenField school focuses on both knowledge and character. Our son has become more respectful, responsible, and enthusiastic about learning.',
+  },
+  {
+    name: 'Mrs. Vijayalakshmi',
+    role: 'Parent of Harini, Grade 8',
+    review:
+      'My daughter, once shy, now speaks confidently and participates in every event. The teachers here truly care about every child\'s growth.',
+  },
+  {
+    name: 'Mr. & Mrs. Ramesh',
+    role: 'Parents',
+    review:
+      'We relocated from Pollachi for this school. Mr. Sham Herald\'s 25+ years of experience reflect in the school\'s balance of discipline, warmth, and quality education.',
+  },
+  {
+    name: 'Mrs. Lavanya',
+    role: 'Parent of Nithya, Grade 7',
+    review:
+      'The Annual Day was unforgettable — students with inspiring guests like Dr. Bhathavasalam, Mr. Veeramuthuvel, and Dr. Sylendra Babu. My daughter came home full of dreams and determination.',
+  },
+  {
+    name: 'Mr. & Mrs. Senthil Kumar',
+    role: 'Parents',
+    review:
+      'Green Fields nurtures students with care and discipline. The smart classrooms and regular activities make learning joyful and engaging.',
+  },
+  {
+    name: 'Mrs. Sangeetha',
+    role: 'Parent of Divya, Grade 4',
+    review:
+      'My daughter has blossomed here — she\'s confident, kind, and eager to learn. The school truly builds character along with knowledge.',
+  },
+  {
+    name: 'Mr. & Mrs. Ganesh',
+    role: 'Parents',
+    review:
+      'We visited many schools, but only Green Fields felt genuine. The personal attention from teachers and the calm atmosphere give us total peace of mind.',
   },
 ];
 
@@ -52,7 +91,7 @@ const highlightCards = [
   },
   {
     title: 'Admission Open',
-    description: 'Join our vibrant community. Apply for 2025-26 now!',
+    description: 'Join our vibrant community. Apply for 2026-2027 now!',
     image: admissionImage,
     link: './admission',
     icon: FaUserGraduate,
@@ -238,7 +277,15 @@ const LandingPage: React.FC<LandingPageProps> = () => {
                 >
                   <Icon size={48} />
                 </motion.div>
-                <img src={card.image} alt={card.title} className="h-64 w-full object-cover rounded mb-4" />
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  className="h-64 w-full object-cover rounded mb-4"
+                  loading="lazy"
+                  decoding="async"
+                  width={1024}
+                  height={384}
+                />
                 <h3 className="font-bold text-lg mb-2">{card.title}</h3>
                 <p className="text-gray-600 text-center">{card.description}</p>
               </motion.div>

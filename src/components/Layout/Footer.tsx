@@ -7,8 +7,8 @@ const Footer: React.FC = () => (
       
       {/* Contact Info */}
       <div className="text-center md:text-left">
-        <div className="font-bold text-lg">Green Field School</div>
-        <div>11/34B, Udayampalayam Rd, <br />Pallakattu Thottam, Gounder Mills,
+        <div className="font-bold text-lg">Greenfield Campus</div>
+        <div>11/34B, Udayampalayam Rd, <br />Gounder Mills,
        <br />Coimbatore, Tamil Nadu 641029.
 </div>
         <div>+91 96003 66634 | 
@@ -35,7 +35,7 @@ const Footer: React.FC = () => (
           <FaFacebookF size={20} />
         </a>
         <a
-          href="https://wa.me/919876543210" // Replace with actual WhatsApp number
+          href="https://wa.me/919894376100" // Replace with actual WhatsApp number
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white text-green-700 rounded-full p-2 hover:bg-emerald-100 transition"
